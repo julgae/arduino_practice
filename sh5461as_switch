@@ -1,0 +1,32 @@
+/* When press a switch, the 7segment turns on */
+
+int button = A0;
+int countDigit[4][12] = {
+  /* 1자리수 6번, 10자리수 8번, 100자리수 9번, 1000자리수 12번*/
+  {0, 0, 1, 1, 0, LOW, 1, HIGH, HIGH, 0, 0, HIGH},
+  {1, 1, 0, 0, 1, HIGH, 1, LOW, HIGH, 0, 1, HIGH},
+  {0, 1, 1, 1, 1, HIGH, 1, HIGH, LOW, 0, 1, HIGH},
+  {0, 0, 0, 1, 1, HIGH, 1, HIGH, HIGH, 1, 0, LOW},
+};
+
+void setup() {
+  pinMode(button, INPUT_PULLUP);
+  for (int i = 2; i < 14; i++) {
+    pinMode(i, OUTPUT);
+  }
+}
+
+void loop() {
+  if (digitalRead(button) == LOW) {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 2; j < 14; j++) {
+        digitalWrite(j, countDigit[i][j-2]);
+      }
+      delay(500);
+    }
+  } else {
+    for (int i = 2; i < 14; i++) {
+      digitalWrite(i, LOW); 
+    }
+  }
+}
