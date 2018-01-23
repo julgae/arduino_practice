@@ -1,0 +1,25 @@
+#include <IRremote.h>
+
+int recvPin = 11;
+
+IRrecv irrecv(recvPin);
+decode_results res;
+
+void setup() {
+  Serial.begin(9600);
+  irrecv.enableIRIn();
+  pinMode(8,OUTPUT);
+}
+
+void loop() {
+  if (irrecv.decode(&res)) {
+    Serial.println(res.value, HEX);
+    if (res.value == 0xFF30CF) {
+      digitalWrite(8, HIGH);
+      delay(1000);
+      digitalWrite(8, LOW);
+    }
+    irrecv.resume();
+  }
+  delay(100);
+}
