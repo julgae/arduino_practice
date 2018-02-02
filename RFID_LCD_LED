@@ -36,7 +36,7 @@ void setup() {
   digitalWrite(NRSTPD, HIGH);
 
   myRFID.AddicoreRFID_Init();
-// LED doesn't working when lcd.begin line is upper side, maybe upper Serial.begin function..
+  //CAUTION! LED doesn't working when lcd.begin line is upper side, maybe upper Serial.begin function..
   lcd.begin(16,2);
 
   lcd.backlight();
