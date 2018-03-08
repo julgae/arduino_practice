@@ -1,0 +1,117 @@
+/*
+ * TO-BE :
+ * 1. 시간 카운트다운 할 때 무게 동시에 잴 수 있도록
+ * 2. 시간제어 동기 방식으로 : delay 함수는 비동기이기도 하고, 함수호출 시 느려짐 
+*/
+
+#include <IRremote.h> // IR 사용
+#include <Wire.h> // LCD i2c 사용
+#include <LiquidCrystal_I2C.h> // LCD 사용
+#include <MsTimer2.h> // timer 사용
+#include "HX711.h" // load cell 사용
+
+/* Timer 관련 설정 */
+static String coffeeName;
+static int setUpTime;
+static int minute;
+static int second;
+//static boolean timeFlag = false;
+
+/* load cell 관련 설정 */
+HX711 scale (A1, A0);
+float calibration_factor = 1110;
+
+/* IR remote 관련 설정 */
+const int irPin = 2;
+IRrecv irrecv(irPin); // IRrecv 객체 생성
+decode_results res; // 수신 받은 데이터 저장
+
+/* LCD 관련 설정 */
+LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+
+void setup() {
+  Serial.begin(9600);
+  
+  /* IR remote */
+  irrecv.enableIRIn();
+
+  /* LCD */
+  lcd.begin(16,2);
+
+  /* load cell setting */
+  scale.set_scale(calibration_factor);
+  scale.tare(); //Reset the scale to 0
+}
+
+void loop() {
+  if (irrecv.decode(&res)) {
+    Serial.println(res.value, HEX);
+    
+    // lcd에서 내용 사라지지 않는 것 방지
+    if (res.value != 0xFFFFFFFF) {
+      lcd.clear();
+    }
+    
+    switch(res.value) {
+      case 0xFFC23D: // PLAY/PAUSE
+        if (coffeeName == NULL || setUpTime == 0) {
+          lcd.setCursor(3,0);
+          lcd.print("!!");
+        } else {
+          for (; setUpTime >= 0; setUpTime--) {
+            if (res.value == 0xFF906F) {
+              break;
+            }
+            coffeeInfo(coffeeName, setUpTime);
+            delay(50);
+          }
+        }
+        break;
+      case 0xFF906F: // EQ
+        lcd.setCursor(4,1);
+        lcd.print("EQ");
+        break;
+      case 0xFF30CF: // 1      
+        coffeeInfo("Colombia ", 660);
+        break;
+      case 0xFF18E7: // 2     
+        coffeeInfo("Brazil   ", 250);
+        break;
+      case 0xFF7A85: // 3     
+        coffeeInfo("Costarica", 150);
+        break;
+    }
+    irrecv.resume(); // 다음 값 받음
+  }
+
+  gramCheck();
+}
+
+void coffeeInfo(String coffee, int timeInput) {
+  setUpTime = timeInput;
+  minute = setUpTime / 60;
+  second = setUpTime % 60;
+  coffeeName = coffee;
+  
+  lcd.setCursor(0,0);
+  lcd.print(coffeeName);
+  lcd.setCursor(10,0);
+  lcd.print(minute);
+  lcd.print(":");
+  lcd.print(second);
+  lcd.print("   ");
+}
+
+void gramCheck() {
+  if (scale.get_units(5) <= 0) {
+    lcd.setCursor(0,1);
+    lcd.print("0.00 g");
+    lcd.print("            ");    
+  } else {
+    lcd.setCursor(0,1);
+    lcd.print(scale.get_units(5),1);
+    lcd.print(" g           ");    
+  }
+  scale.power_down();
+  scale.power_up();  
+}
